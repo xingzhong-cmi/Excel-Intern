@@ -1,0 +1,35 @@
+# Environment variables
+config/.env
+.env
+
+# Temporary files
+temp/*.py
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Logs
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Results (optional - may want to keep for review)
+# results/*.xlsx
+# results/*.xls
+# results/*.csv
