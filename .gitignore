@@ -29,7 +29,13 @@ venv/
 env/
 ENV/
 
-# Results (optional - may want to keep for review)
-# results/*.xlsx
-# results/*.xls
-# results/*.csv
+# Excel files (keep directory structure only)
+uploads/*.xlsx
+uploads/*.xls
+uploads/*.csv
+results/*.xlsx
+results/*.xls
+results/*.csv
+
+# But keep .gitkeep files
+!**/.gitkeep
