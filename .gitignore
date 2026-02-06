@@ -1,0 +1,41 @@
+# Environment variables
+config/.env
+.env
+
+# Temporary files
+temp/*.py
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Logs
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Excel files (keep directory structure only)
+uploads/*.xlsx
+uploads/*.xls
+uploads/*.csv
+results/*.xlsx
+results/*.xls
+results/*.csv
+
+# But keep .gitkeep files
+!**/.gitkeep
