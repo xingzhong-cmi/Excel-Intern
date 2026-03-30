@@ -23,7 +23,7 @@ DANGEROUS_PATTERNS = [
     r"\bshutil\b\s*\.\s*rmtree",
     r"\bos\b\s*\.\s*remove",
     r"\bos\b\s*\.\s*unlink",
-    r"\bopen\s*\([^)]*['\"]w['\"]",
+    r"\bopen\s*\([^)]*['\"][wa][+b]*['\"]",
 ]
 
 UPLOADS_DIR = Path("uploads")
@@ -248,10 +248,14 @@ async def generate_and_execute(
     # Get list of result files before execution
     existing_results = set(RESULTS_DIR.iterdir()) if RESULTS_DIR.exists() else set()
 
+    # Write script to a temp file and execute
+    temp_dir = Path("temp")
+    temp_dir.mkdir(exist_ok=True)
+    temp_script_path = None
+
     try:
-        # Write script to a temp file and execute
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", dir="temp", delete=False
+            mode="w", suffix=".py", dir=str(temp_dir), delete=False
         ) as f:
             f.write(script)
             temp_script_path = f.name
@@ -260,12 +264,8 @@ async def generate_and_execute(
         exec_globals = {"__builtins__": __builtins__}
         exec(compile(script, temp_script_path, "exec"), exec_globals)
 
-        # Clean up temp file
-        Path(temp_script_path).unlink(missing_ok=True)
-
     except Exception as e:
         logger.error("Script execution error: %s\n%s", e, traceback.format_exc())
-        Path(temp_script_path).unlink(missing_ok=True)
         return {
             "success": False,
             "message": f"Script execution failed: {e}",
@@ -273,6 +273,9 @@ async def generate_and_execute(
             "output_files": [],
             "preview": None,
         }
+    finally:
+        if temp_script_path:
+            Path(temp_script_path).unlink(missing_ok=True)
 
     # Find new result files
     current_results = set(RESULTS_DIR.iterdir()) if RESULTS_DIR.exists() else set()

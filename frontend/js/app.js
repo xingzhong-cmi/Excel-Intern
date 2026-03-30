@@ -1,6 +1,14 @@
 /**
  * Excel助手 - Frontend Application (Vue 3)
  */
+
+// UX timing constants for simulated processing phases (milliseconds)
+const PHASE_ANALYZE_DURATION = 2000;
+const PHASE_GENERATE_DURATION = 5000;
+
+// Maximum upload file size in MB
+const MAX_FILE_SIZE_MB = 50;
+
 const { createApp, ref } = Vue;
 
 createApp({
@@ -44,8 +52,8 @@ createApp({
             }
 
             // Validate file size (50MB)
-            if (file.size > 50 * 1024 * 1024) {
-                showError('文件大小超过50MB限制');
+            if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+                showError(`文件大小超过${MAX_FILE_SIZE_MB}MB限制`);
                 return;
             }
 
@@ -93,9 +101,9 @@ createApp({
             processingPhase.value = 1;
             result.value = null;
 
-            // Simulate processing phases for UX
-            const phaseTimer1 = setTimeout(() => { processingPhase.value = 2; }, 2000);
-            const phaseTimer2 = setTimeout(() => { processingPhase.value = 3; }, 5000);
+            // Simulate processing phases for UX feedback
+            const phaseTimer1 = setTimeout(() => { processingPhase.value = 2; }, PHASE_ANALYZE_DURATION);
+            const phaseTimer2 = setTimeout(() => { processingPhase.value = 3; }, PHASE_GENERATE_DURATION);
 
             try {
                 const response = await fetch('/api/process', {

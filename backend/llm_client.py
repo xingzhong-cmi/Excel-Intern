@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 # Default configuration
 DEFAULT_API_URL = "https://api.deepseek.com/v1/chat/completions"
 DEFAULT_MODEL = "deepseek-chat"
+# Default timeout: 120s to allow for large file processing and LLM response generation
 DEFAULT_TIMEOUT = 120
 
 

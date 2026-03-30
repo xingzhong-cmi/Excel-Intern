@@ -1,6 +1,7 @@
 """FastAPI application for Excel Assistant."""
 
 import logging
+import os
 import uuid
 from pathlib import Path
 
@@ -36,10 +37,11 @@ for d in [UPLOADS_DIR, RESULTS_DIR, TEMP_DIR]:
 # FastAPI app
 app = FastAPI(title="Excel助手", version="1.0.0")
 
-# CORS
+# CORS - configurable via CORS_ORIGINS env var (comma-separated), defaults to * for development
+cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
