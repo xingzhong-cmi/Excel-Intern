@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel助手 - 智能Excel处理平台</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                    <h1>Excel助手</h1>
+                </div>
+                <p class="subtitle">AI驱动的智能Excel处理平台</p>
+            </div>
+        </header>
+
+        <!-- Progress Steps -->
+        <div class="steps-bar">
+            <div class="steps-container">
+                <div class="step" :class="{ active: currentStep >= 1, completed: currentStep > 1 }">
+                    <div class="step-number">1</div>
+                    <div class="step-label">上传文件</div>
+                </div>
+                <div class="step-line" :class="{ active: currentStep > 1 }"></div>
+                <div class="step" :class="{ active: currentStep >= 2, completed: currentStep > 2 }">
+                    <div class="step-number">2</div>
+                    <div class="step-label">输入需求</div>
+                </div>
+                <div class="step-line" :class="{ active: currentStep > 2 }"></div>
+                <div class="step" :class="{ active: currentStep >= 3 }">
+                    <div class="step-number">3</div>
+                    <div class="step-label">查看结果</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Step 1: Upload -->
+            <section v-show="currentStep === 1" class="card upload-section">
+                <h2 class="card-title">
+                    <span class="card-icon">📁</span>
+                    上传Excel文件
+                </h2>
+                <p class="card-desc">支持 .xlsx、.xls、.csv 格式的文件</p>
+
+                <div
+                    class="upload-area"
+                    :class="{ dragging: isDragging }"
+                    @dragover.prevent="isDragging = true"
+                    @dragleave.prevent="isDragging = false"
+                    @drop.prevent="handleDrop"
+                    @click="triggerFileInput"
+                >
+                    <input
+                        type="file"
+                        ref="fileInput"
+                        accept=".xlsx,.xls,.csv"
+                        @change="handleFileSelect"
+                        style="display: none"
+                    >
+                    <div class="upload-icon">⬆️</div>
+                    <p class="upload-text">拖拽文件到此处，或<span class="upload-link">点击选择文件</span></p>
+                    <p class="upload-hint">单个文件大小不超过 50MB</p>
+                </div>
+
+                <!-- Upload Progress -->
+                <div v-if="uploading" class="upload-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" :style="{ width: '100%' }"></div>
+                    </div>
+                    <p class="progress-text">正在上传并解析文件...</p>
+                </div>
+
+                <!-- Uploaded File Info -->
+                <div v-if="uploadedFile" class="file-info">
+                    <div class="file-info-header">
+                        <div class="file-meta">
+                            <span class="file-icon">📄</span>
+                            <div>
+                                <p class="file-name">{{ uploadedFile.original_name }}</p>
+                                <p class="file-stats">{{ uploadedFile.rows }} 行 × {{ uploadedFile.columns.length }} 列</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline btn-sm" @click="removeFile">移除</button>
+                    </div>
+
+                    <!-- Preview Table -->
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th v-for="col in uploadedFile.columns" :key="col">{{ col }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(row, idx) in uploadedFile.preview.slice(0, 10)" :key="idx">
+                                    <td class="row-num">{{ idx + 1 }}</td>
+                                    <td v-for="col in uploadedFile.columns" :key="col">{{ row[col] }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p v-if="uploadedFile.rows > 10" class="table-note">
+                        显示前 10 行（共 {{ uploadedFile.rows }} 行）
+                    </p>
+
+                    <div class="action-bar">
+                        <button class="btn btn-primary" @click="goToStep(2)">
+                            下一步：输入需求
+                            <span class="btn-arrow">→</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Instruction -->
+            <section v-show="currentStep === 2" class="card instruction-section">
+                <h2 class="card-title">
+                    <span class="card-icon">💡</span>
+                    描述您的需求
+                </h2>
+                <p class="card-desc">用自然语言描述您想对Excel数据进行的操作</p>
+
+                <!-- Guide Tips -->
+                <div class="guide-tips">
+                    <h3 class="guide-title">💡 操作提示</h3>
+                    <div class="tips-grid">
+                        <div class="tip-card" @click="useExample('请删除文件中的所有空行')">
+                            <span class="tip-icon">🧹</span>
+                            <p>删除空行</p>
+                        </div>
+                        <div class="tip-card" @click="useExample('请对数据按照第一列进行去重')">
+                            <span class="tip-icon">🔄</span>
+                            <p>数据去重</p>
+                        </div>
+                        <div class="tip-card" @click="useExample('请统计每列的平均值、最大值和最小值')">
+                            <span class="tip-icon">📈</span>
+                            <p>统计分析</p>
+                        </div>
+                        <div class="tip-card" @click="useExample('文件中的第三列是行政区域的名称，请将第三列地点对应的简介写在后面新添加的列中')">
+                            <span class="tip-icon">🤖</span>
+                            <p>AI补全数据</p>
+                        </div>
+                        <div class="tip-card" @click="useExample('请将所有金额列的数值保留两位小数')">
+                            <span class="tip-icon">🔢</span>
+                            <p>格式化数据</p>
+                        </div>
+                        <div class="tip-card" @click="useExample('请按照销售额从高到低排序')">
+                            <span class="tip-icon">📊</span>
+                            <p>排序数据</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Context -->
+                <div class="file-context" v-if="uploadedFile">
+                    <span class="context-label">当前文件：</span>
+                    <span class="context-file">📄 {{ uploadedFile.original_name }}</span>
+                    <span class="context-meta">（{{ uploadedFile.rows }}行 × {{ uploadedFile.columns.length }}列）</span>
+                </div>
+
+                <!-- Instruction Input -->
+                <div class="instruction-input-wrapper">
+                    <textarea
+                        v-model="instruction"
+                        class="instruction-input"
+                        rows="5"
+                        placeholder="请输入您的需求，例如：&#10;- 请删除所有空行&#10;- 文件中的第三列是城市名称，请新增一列写入对应的省份&#10;- 请统计每个类别的销售总额"
+                    ></textarea>
+                    <div class="input-footer">
+                        <span class="char-count">{{ instruction.length }} 字</span>
+                    </div>
+                </div>
+
+                <div class="action-bar action-bar-between">
+                    <button class="btn btn-outline" @click="goToStep(1)">
+                        <span class="btn-arrow">←</span>
+                        返回上传
+                    </button>
+                    <button
+                        class="btn btn-primary"
+                        :disabled="!instruction.trim() || processing"
+                        @click="processInstruction"
+                    >
+                        <span v-if="processing" class="spinner"></span>
+                        {{ processing ? '处理中...' : '开始处理' }}
+                        <span v-if="!processing" class="btn-arrow">→</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Processing Overlay -->
+            <div v-if="processing" class="processing-overlay">
+                <div class="processing-card">
+                    <div class="processing-animation">
+                        <div class="processing-dot"></div>
+                        <div class="processing-dot"></div>
+                        <div class="processing-dot"></div>
+                    </div>
+                    <h3>正在智能处理您的需求</h3>
+                    <p>AI 正在分析文件并生成处理脚本，请稍候...</p>
+                    <div class="processing-steps">
+                        <div class="p-step completed">
+                            <span class="p-step-icon">✓</span>
+                            分析文件结构
+                        </div>
+                        <div class="p-step" :class="{ active: processingPhase >= 2 }">
+                            <span class="p-step-icon">{{ processingPhase >= 2 ? '⚡' : '○' }}</span>
+                            生成处理脚本
+                        </div>
+                        <div class="p-step" :class="{ active: processingPhase >= 3 }">
+                            <span class="p-step-icon">{{ processingPhase >= 3 ? '⚡' : '○' }}</span>
+                            执行数据处理
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Results -->
+            <section v-show="currentStep === 3" class="card result-section">
+                <h2 class="card-title">
+                    <span class="card-icon">✅</span>
+                    处理结果
+                </h2>
+
+                <!-- Success Result -->
+                <div v-if="result && result.success" class="result-success">
+                    <div class="result-banner success-banner">
+                        <span class="banner-icon">🎉</span>
+                        <div>
+                            <p class="banner-title">处理完成</p>
+                            <p class="banner-desc">{{ result.message }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Result Preview -->
+                    <div v-if="result.preview" class="result-preview">
+                        <h3 class="section-title">结果预览</h3>
+                        <div class="result-meta">
+                            <span>📄 {{ result.preview.filename }}</span>
+                            <span>{{ result.preview.rows }} 行 × {{ result.preview.columns.length }} 列</span>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th v-for="col in result.preview.columns" :key="col">{{ col }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(row, idx) in result.preview.data.slice(0, 20)" :key="idx">
+                                        <td class="row-num">{{ idx + 1 }}</td>
+                                        <td v-for="col in result.preview.columns" :key="col">{{ row[col] }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p v-if="result.preview.rows > 20" class="table-note">
+                            显示前 20 行（共 {{ result.preview.rows }} 行）
+                        </p>
+                    </div>
+
+                    <!-- Download -->
+                    <div v-if="result.output_files && result.output_files.length" class="download-section">
+                        <h3 class="section-title">下载结果文件</h3>
+                        <div class="download-list">
+                            <a
+                                v-for="file in result.output_files"
+                                :key="file"
+                                :href="'/api/download/' + file"
+                                class="download-item"
+                                download
+                            >
+                                <span class="download-icon">📥</span>
+                                <span class="download-name">{{ file }}</span>
+                                <span class="download-btn">下载</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Result -->
+                <div v-if="result && !result.success" class="result-error">
+                    <div class="result-banner error-banner">
+                        <span class="banner-icon">⚠️</span>
+                        <div>
+                            <p class="banner-title">处理失败</p>
+                            <p class="banner-desc">{{ result.message }}</p>
+                        </div>
+                    </div>
+
+                    <div v-if="result.script" class="script-preview">
+                        <h3 class="section-title">生成的脚本</h3>
+                        <pre class="code-block"><code>{{ result.script }}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Generated Script (collapsible) -->
+                <div v-if="result && result.success && result.script" class="script-section">
+                    <button class="toggle-btn" @click="showScript = !showScript">
+                        {{ showScript ? '隐藏' : '查看' }}生成的脚本
+                        <span class="toggle-arrow">{{ showScript ? '▲' : '▼' }}</span>
+                    </button>
+                    <div v-show="showScript" class="script-preview">
+                        <pre class="code-block"><code>{{ result.script }}</code></pre>
+                    </div>
+                </div>
+
+                <div class="action-bar action-bar-between">
+                    <button class="btn btn-outline" @click="goToStep(2)">
+                        <span class="btn-arrow">←</span>
+                        修改需求
+                    </button>
+                    <button class="btn btn-primary" @click="startOver">
+                        🔄 处理新文件
+                    </button>
+                </div>
+            </section>
+
+            <!-- Error Toast -->
+            <div v-if="errorMessage" class="toast error-toast" @click="errorMessage = ''">
+                <span class="toast-icon">❌</span>
+                {{ errorMessage }}
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Excel助手 v1.0 — AI驱动的智能Excel处理平台</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
